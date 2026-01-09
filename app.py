@@ -13,7 +13,7 @@ import pandas as pd
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(page_title="Habit Tracker", page_icon="🔥")
-st.title("🔥 Habit Tracker with AI Coach")
+st.title("🔥 Habit Tracker")
 
 # ------------------ DATABASE SETUP ------------------
 engine = create_engine("sqlite:///habits.db")
