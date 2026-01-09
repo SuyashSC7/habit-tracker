@@ -83,6 +83,23 @@ st.markdown("""
     margin: 0;
     opacity: 0.95;
 }
+/* Larger checkboxes and task labels */
+/* Scale the native checkbox input and increase label font-size for visibility */
+input[type="checkbox"] {
+    transform: scale(1.5); /* increase checkbox size */
+    margin-right: 0.6rem;
+    vertical-align: middle;
+}
+.stCheckbox, .stCheckbox label, .stCheckbox span {
+    font-size: 1.15rem; /* increase task text size */
+    font-weight: 600;
+}
+/* Improve spacing for the checkbox + label row */
+.block-container .stCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
