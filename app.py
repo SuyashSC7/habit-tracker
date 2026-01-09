@@ -226,14 +226,6 @@ st.subheader("🤖 AI Habit Coach")
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    # Model selection
-    selected_model = st.selectbox(
-        "Select AI Model:",
-        ["tinyllama", "phi", "gemma:2b", "llama2", "mistral"],
-        index=0,
-        help="TinyLlama (637MB) is fastest. Phi (1.6GB) has best quality for size."
-    )
-    
     if st.button("Get Health Insights", type="secondary"):
         if not habits:
             st.info("Add habits first.")
@@ -254,23 +246,22 @@ Provide brief, encouraging advice (4-5 sentences) about the health benefits of t
 
 Keep it positive and motivating!"""
 
-            with st.spinner(f"Consulting AI coach ({selected_model})..."):
-                response = ask_coach(prompt, model=selected_model)
+            with st.spinner("Consulting AI coach..."):
+                response = ask_coach(prompt, model="tinyllama")
 
             if response and not response.startswith("⚠️"):
                 st.markdown("### 💡 Health Insights")
                 st.write(response)
             else:
                 st.error(response)
-                st.info("Try installing a general model: `ollama pull llama2`")
+                st.info("Install TinyLlama: `ollama pull tinyllama`")
 
 with col2:
     with st.expander("⚙️ Setup"):
-        st.caption("**Smallest models:**")
+        st.caption("**Using:** TinyLlama (637MB)")
+        st.caption("")
+        st.caption("**Install model:**")
         st.code("ollama pull tinyllama", language="bash")
-        st.caption("↑ Only 637MB!")
-        st.code("ollama pull phi", language="bash")
-        st.caption("↑ 1.6GB, better quality")
         st.caption("")
         st.caption("**Start Ollama:**")
         st.code("ollama serve", language="bash")
