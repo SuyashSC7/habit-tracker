@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date, timedelta
 import subprocess
 import json
+import requests
 
 from sqlalchemy import (
     create_engine, Column, Integer, String,
@@ -43,23 +44,40 @@ today = date.today()
 # ------------------ LLM FUNCTION ------------------
 def ask_coach(prompt: str) -> str:
     """
-    Uses local LLM via Ollama - optimized for speed
+    Uses local LLM via Ollama API - works reliably in Streamlit
     """
     try:
-        # Use a faster, lighter model or add parameters for quick response
-        result = subprocess.run(
-            ["ollama", "run", "deepseek-coder", "--verbose", "false"],
-            input=prompt,
-            capture_output=True,
-            text=True,
-            timeout=15  # Reduced timeout
+        import requests
+        
+        # Use Ollama's REST API instead of CLI
+        response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                'model': 'deepseek-coder',
+                'prompt': prompt,
+                'stream': False,
+                'options': {
+                    'temperature': 0.7,
+                    'num_predict': 150  # Limit response length for speed
+                }
+            },
+            timeout=20
         )
-        output = result.stdout.strip()
-        return output if output else "⚠️ No response received. Try again."
-    except subprocess.TimeoutExpired:
-        return "⚠️ Response took too long. Consider using a lighter model like 'llama2' or 'mistral'."
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get('response', '').strip()
+        else:
+            return f"⚠️ Ollama returned error {response.status_code}. Is Ollama running?"
+            
+    except requests.exceptions.ConnectionError:
+        return "⚠️ Cannot connect to Ollama. Start it with: ollama serve"
+    except requests.exceptions.Timeout:
+        return "⚠️ Response timeout. Try a faster model like 'mistral' or 'tinyllama'"
+    except ImportError:
+        return "⚠️ 'requests' library not installed. Run: pip install requests"
     except Exception as e:
-        return f"⚠️ Error: {str(e)}\n\nTry: ollama pull mistral (for faster responses)"
+        return f"⚠️ Error: {str(e)}"
 
 
 # ------------------ ADD HABIT (BUTTON + MODAL) ------------------
@@ -229,12 +247,15 @@ For each habit type (exercise/meditation/reading etc), state ONE key health bene
                 st.warning("No response. Ensure Ollama is running: `ollama run mistral`")
 
 with col2:
-    with st.expander("⚙️ Model"):
-        st.caption("Using: deepseek-coder")
-        st.caption("For faster results, try:")
+    with st.expander("⚙️ Setup"):
+        st.caption("**Model:** deepseek-coder")
+        st.caption("**Faster options: **")
         st.code("ollama pull mistral", language="bash")
-        st.code("ollama pull llama2", language="bash")
+        st.caption("Change model at line 33")
+        st.caption("")
+        st.caption("**Ensure Ollama is running:**")
+        st.code("ollama serve", language="bash")
 
 # ------------------ FOOTER ------------------
 st.markdown("---")
-st.caption("Local AI • Offline • Privacy Friendly")
+st.caption("Local • Offline • Privacy Friendly")
