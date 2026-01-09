@@ -117,6 +117,7 @@ habits = db.query(Habit).all()
 
 if not habits:
     st.info("No habits yet. Click 'Add New Habit' above to get started.")
+
     for habit in habits:
         col1, col2 = st.columns([4, 1])
         
@@ -131,6 +132,7 @@ if not habits:
             done = st.checkbox(
                 habit.name,
                 value=checked,
+
                 key=f"habit_{habit.id}",
                 style={'font-size': '1.1em'}
             )
@@ -144,6 +146,7 @@ if not habits:
                 db.commit()
         
         with col2:
+
             if st.button("🗑️", key=f"delete_{habit.id}", help="Delete habit", style={'font-size': '1.1em'}):
                 # Delete all check-ins for this habit
                 db.query(CheckIn).filter_by(habit_id=habit.id).delete()
