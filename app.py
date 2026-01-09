@@ -42,9 +42,10 @@ Base.metadata.create_all(engine)
 today = date.today()
 
 # ------------------ LLM FUNCTION ------------------
-def ask_coach(prompt: str) -> str:
+def ask_coach(prompt: str, model: str = "llama2") -> str:
     """
     Uses local LLM via Ollama API - works reliably in Streamlit
+    Use general-purpose models like llama2, mistral, or gemma
     """
     try:
         import requests
@@ -53,27 +54,29 @@ def ask_coach(prompt: str) -> str:
         response = requests.post(
             'http://localhost:11434/api/generate',
             json={
-                'model': 'deepseek-coder',
+                'model': model,
                 'prompt': prompt,
                 'stream': False,
                 'options': {
-                    'temperature': 0.7,
-                    'num_predict': 150  # Limit response length for speed
+                    'temperature': 0.8,
+                    'num_predict': 200  # Limit response length for speed
                 }
             },
-            timeout=20
+            timeout=25
         )
         
         if response.status_code == 200:
             result = response.json()
             return result.get('response', '').strip()
+        elif response.status_code == 404:
+            return f"⚠️ Model '{model}' not found. Install it with: ollama pull {model}"
         else:
             return f"⚠️ Ollama returned error {response.status_code}. Is Ollama running?"
             
     except requests.exceptions.ConnectionError:
         return "⚠️ Cannot connect to Ollama. Start it with: ollama serve"
     except requests.exceptions.Timeout:
-        return "⚠️ Response timeout. Try a faster model like 'mistral' or 'tinyllama'"
+        return "⚠️ Response timeout. Try a faster model like 'tinyllama'"
     except ImportError:
         return "⚠️ 'requests' library not installed. Run: pip install requests"
     except Exception as e:
@@ -223,7 +226,15 @@ st.subheader("🤖 AI Habit Coach")
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    if st.button("Get Quick Health Insights", type="secondary"):
+    # Model selection
+    selected_model = st.selectbox(
+        "Select AI Model:",
+        ["tinyllama", "phi", "gemma:2b", "llama2", "mistral"],
+        index=0,
+        help="TinyLlama (637MB) is fastest. Phi (1.6GB) has best quality for size."
+    )
+    
+    if st.button("Get Health Insights", type="secondary"):
         if not habits:
             st.info("Add habits first.")
         else:
@@ -231,31 +242,39 @@ with col1:
             habit_list = [f"{item['Habit']} ({item['Current Streak'].replace(' 🔥', '')} days)" for item in streak_data]
             habit_summary = ", ".join(habit_list)
 
-            prompt = f"""You are a health coach. Give brief advice (max 5 sentences) with specific health stats.
+            prompt = f"""You are a supportive fitness and wellness coach. 
 
-Habits: {habit_summary}
+The user is tracking these habits: {habit_summary}
 
-For each habit type (exercise/meditation/reading etc), state ONE key health benefit with a percentage or stat. Be concise and encouraging."""
+Provide brief, encouraging advice (4-5 sentences) about the health benefits of their habits. Include specific statistics or percentages where possible. For example:
+- Exercise habits: mention cardiovascular benefits, strength gains, disease prevention
+- Meditation: stress reduction percentages
+- Reading: cognitive benefits
+- Sleep: recovery and health impacts
 
-            with st.spinner("Analyzing..."):
-                response = ask_coach(prompt)
+Keep it positive and motivating!"""
 
-            if response:
+            with st.spinner(f"Consulting AI coach ({selected_model})..."):
+                response = ask_coach(prompt, model=selected_model)
+
+            if response and not response.startswith("⚠️"):
                 st.markdown("### 💡 Health Insights")
                 st.write(response)
             else:
-                st.warning("No response. Ensure Ollama is running: `ollama run mistral`")
+                st.error(response)
+                st.info("Try installing a general model: `ollama pull llama2`")
 
 with col2:
     with st.expander("⚙️ Setup"):
-        st.caption("**Model:** deepseek-coder")
-        st.caption("**Faster options: **")
-        st.code("ollama pull mistral", language="bash")
-        st.caption("Change model at line 33")
+        st.caption("**Smallest models:**")
+        st.code("ollama pull tinyllama", language="bash")
+        st.caption("↑ Only 637MB!")
+        st.code("ollama pull phi", language="bash")
+        st.caption("↑ 1.6GB, better quality")
         st.caption("")
-        st.caption("**Ensure Ollama is running:**")
+        st.caption("**Start Ollama:**")
         st.code("ollama serve", language="bash")
 
 # ------------------ FOOTER ------------------
 st.markdown("---")
-st.caption("Local • Offline • Privacy Friendly")
+st.caption("Local AI • Offline • Privacy Friendly")
