@@ -74,7 +74,7 @@ def ask_coach(prompt: str, model: str = "llama2") -> str:
             return f"⚠️ Ollama returned error {response.status_code}. Is Ollama running?"
             
     except requests.exceptions.ConnectionError:
-        return "⚠️ Cannot connect to Ollama. Start it with: ollama serve"
+        return "⚠️ Cannot connect to Ollama. currently running on local pc only not in cloud."
     except requests.exceptions.Timeout:
         return "⚠️ Response timeout. Try a faster model like 'tinyllama'"
     except ImportError:
